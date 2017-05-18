@@ -17,27 +17,27 @@ let result() = check (fun x -> run (JobChoice.result x >>- fun r -> r = Ok x))
 [<Test>]
 let bind() =
   check (fun (x: Choice<_,_>) (x2yJ: _ -> Choice<_,_>) ->
-    run (JobChoice.bind (Job.result x) (x2yJ >> Job.result)) = Choice.bind x2yJ x)
+    run (JobChoice.bind (x2yJ >> Job.result) (Job.result x)) = Choice.bind x2yJ x)
 
 [<Test>]
 let bindAsync() =
   check (fun (x: Choice<int,_>) (Function.F(_, x2yJ: _ -> Choice<_,_>)) ->
-    run (JobChoice.bindAsync (async.Return x) (x2yJ >> Job.result)) = Choice.bind x2yJ x)
+    run (JobChoice.bindAsync (x2yJ >> Job.result) (async.Return x)) = Choice.bind x2yJ x)
 
 [<Test>]
 let bindTask() =
   check (fun (x: Choice<int,_>) (Function.F(_, x2yJ: _ -> Choice<_,_>)) ->
-    run (JobChoice.bindTask (Task.FromResult x) (x2yJ >> Job.result)) = Choice.bind x2yJ x)
+    run (JobChoice.bindTask (x2yJ >> Job.result) (Task.FromResult x)) = Choice.bind x2yJ x)
 
 [<Test>]
 let bindVoidTask() =
   check (fun (Function.F(_, x2yJ: _ -> Choice<_,_>)) ->
-    run (JobChoice.bindVoidTask (Task.Factory.StartNew(fun() -> ())) (x2yJ >> Job.result)) = x2yJ ())
+    run (JobChoice.bindVoidTask (x2yJ >> Job.result) (Task.Factory.StartNew(fun() -> ()))) = x2yJ ())
 
 [<Test>]
 let bindChoice() =
   check (fun (x: Choice<_,_>) (x2yJ: _ -> Choice<_,_>) ->
-    run (JobChoice.bindChoice x (x2yJ >> Job.result)) = Choice.bind x2yJ x)
+    run (JobChoice.bindChoice (x2yJ >> Job.result) x) = Choice.bind x2yJ x)
 
 [<Test>]
 let map() =

@@ -7,17 +7,17 @@ open System.Threading.Tasks
 open Hopac.Core
 
 module JobChoice = 
-  let bind (xJ: Job<Choice<'x, 'e>>) (x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> =
+  let bind (x2yJ: 'x -> Job<Choice<'y, 'e>>) (xJ: Job<Choice<'x, 'e>>) : Job<Choice<'y, 'e>> =
     xJ >>= function
     | Fail error -> Job.result <| Fail error 
     | Ok x -> x2yJ x 
-  let bindAsync (xA: Async<Choice<'x, 'e>>) (x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> =
-    bind (Job.fromAsync xA) x2yJ
-  let bindTask (xT: Task<Choice<'x, 'e>>) (x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> =
-    bind (Job.awaitTask xT) x2yJ
-  let bindVoidTask (uT: Task) (u2xJ: unit -> Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = 
+  let bindAsync (x2yJ: 'x -> Job<Choice<'y, 'e>>) (xA: Async<Choice<'x, 'e>>) : Job<Choice<'y, 'e>> =
+    bind x2yJ (Job.fromAsync xA)
+  let bindTask (x2yJ: 'x -> Job<Choice<'y, 'e>>) (xT: Task<Choice<'x, 'e>>) : Job<Choice<'y, 'e>> =
+    bind x2yJ (Job.awaitTask xT)
+  let bindVoidTask (u2xJ: unit -> Job<Choice<'x, 'e>>) (uT: Task) : Job<Choice<'x, 'e>> = 
     Job.bindUnitTask u2xJ uT
-  let bindChoice (xJ: Choice<'x, 'e>) (x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> =
+  let bindChoice (x2yJ: 'x -> Job<Choice<'y, 'e>>) (xJ: Choice<'x, 'e>) : Job<Choice<'y, 'e>> =
     match xJ with
     | Fail error -> Job.result <| Fail error 
     | Ok x -> x2yJ x 
@@ -36,11 +36,11 @@ open JobChoice
 
 [<Sealed>] 
 type JobChoiceBuilder () =
-  member inline __.Bind (xJ: Job<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bind xJ x2yJ
-  member inline __.Bind (xA: Async<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindAsync xA x2yJ
-  member inline __.Bind (xT: Task<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindTask xT x2yJ 
-  member inline __.Bind (uT: Task, u2xJ: unit -> Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = bindVoidTask uT u2xJ
-  member inline __.Bind (xJ: Choice<'x, 'e>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindChoice xJ x2yJ
+  member inline __.Bind (xJ: Job<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bind x2yJ xJ
+  member inline __.Bind (xA: Async<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindAsync x2yJ xA
+  member inline __.Bind (xT: Task<Choice<'x, 'e>>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindTask x2yJ xT 
+  member inline __.Bind (uT: Task, u2xJ: unit -> Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = bindVoidTask u2xJ uT
+  member inline __.Bind (xJ: Choice<'x, 'e>, x2yJ: 'x -> Job<Choice<'y, 'e>>) : Job<Choice<'y, 'e>> = bindChoice x2yJ xJ
   member inline __.Combine (uA: Async<Choice<unit, 'e>>, xJ: Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = Job.fromAsync uA >>=. xJ
   member inline __.Combine (uT: Task<Choice<unit, 'e>>, xJ: Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = Job.awaitTask uT >>=. xJ
   member inline __.Combine (uT: Task, xJ: Job<Choice<'x, 'e>>) : Job<Choice<'x, 'e>> = Job.awaitUnitTask uT >>=. xJ
